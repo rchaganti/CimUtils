@@ -1,18 +1,20 @@
-[CmdletBinding()]
-param (
-    [Parameter(Mandatory)]
-    [String] $ClassName,
-
-    [Parameter(Mandatory)]
-    [String] $Namespace
-)
-
-try
+function Get-CimClassProperty
 {
-    $cimClass = Get-CimClass -ClassName $ClassName -Namespace $Namespace
-    foreach ($property in $cimClass.CimClassProperties)
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [String] $ClassName,
+
+        [Parameter(Mandatory)]
+        [String] $Namespace,
+
+        [Parameter()]
+        [String] $PropertyName
+    )
+
+    function extractProperty($cimProperty)
     {
-        $property | Select Name, CimType, `
+        $cimProperty | Select Name, CimType, `
         @{
             l='EmbeddedInstanceOf';e={
                 if ($_.Qualifiers.Name -contains 'EmbeddedInstance')
@@ -39,8 +41,33 @@ try
             }
         }
     }
-}
-catch
-{
-    Write-Error $_
+
+    try
+    {
+        $cimClass = Get-CimClass -ClassName $ClassName -Namespace $Namespace -ErrorAction Stop
+
+        if ($PropertyName)
+        {
+            $cimProperty = $cimClass.CimClassProperties.Where({ $_.Name -eq $PropertyName })
+            if ($cimProperty)
+            {
+                extractProperty -cimProperty $cimProperty
+            }
+            else
+            {
+                throw "${PropertyName} does not exist in the CIM Class"   
+            }
+        }
+        else
+        {
+            foreach ($property in $cimClass.CimClassProperties)
+            {
+                extractProperty -cimProperty $property
+            }
+        }
+    }
+    catch
+    {
+        Write-Error $_
+    }
 }
