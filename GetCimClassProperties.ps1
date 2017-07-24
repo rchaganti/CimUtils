@@ -10,14 +10,24 @@ param (
     [String] $PropertyName
 )
 
-function extractProperty($cimProperty)
+function extractProperty($cimProperty, $Namespace)
 {
     $cimProperty | Select Name, CimType, `
     @{
         l='EmbeddedInstanceOf';e={
             if ($_.Qualifiers.Name -contains 'EmbeddedInstance')
             {
-                $_.Qualifiers.Where({$_.Name -eq 'EmbeddedInstance'}).Value
+                $embeddedClassName = $_.Qualifiers.Where({$_.Name -eq 'EmbeddedInstance'}).Value
+                $embeddedClass = Get-CimClass -ClassName $embeddedClassName -Namespace $Namespace
+                if ($embeddedClass.CimClassQualifiers['Abstract'].Value)
+                {
+                    $derivedClasses = (Get-CimClass -Namespace $Namespace).Where({ $_.CimSuperClassName -eq  $embeddedClassName}).CimClassName
+                    $derivedClasses
+                }
+                else
+                {
+                    $embeddedClassName
+                }
             }
         }
     },
@@ -49,7 +59,7 @@ try
         $cimProperty = $cimClass.CimClassProperties.Where({ $_.Name -eq $PropertyName })
         if ($cimProperty)
         {
-            extractProperty -cimProperty $cimProperty
+            extractProperty -cimProperty $cimProperty -Namespace $Namespace
         }
         else
         {
@@ -60,7 +70,7 @@ try
     {
         foreach ($property in $cimClass.CimClassProperties)
         {
-            extractProperty -cimProperty $property
+            extractProperty -cimProperty $property -Namespace $Namespace
         }
     }
 }

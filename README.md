@@ -11,7 +11,7 @@ Listing all properties and related details.
     .\GetCimClassProperties.ps1 -Namespace root/Microsoft/Windows/DesiredStateConfiguration -Classname MSFT_DscMetaConfiguration
 
 ### Output ###
-![](http://i.imgur.com/xYibfiF.png)
+![](http://i.imgur.com/GB9swrc.png)
 
 #### Example 2 ####
 Looking for a specific property.
